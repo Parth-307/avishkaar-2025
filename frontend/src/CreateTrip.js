@@ -21,6 +21,8 @@ const CreateTrip = () => {
     activities: ''
   });
 
+  const [dailyItinerary, setDailyItinerary] = useState([]);
+
   const totalSteps = 5;
 
   const handleInputChange = (e) => {
@@ -47,11 +49,54 @@ const CreateTrip = () => {
     navigate('/dashboard');
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Trip Created:', formData);
-    alert('🎉 Trip Created Successfully!\n\nYour mood-adaptive journey has been created with a detailed itinerary. You can now invite group members and start your adventure!');
-    navigate('/dashboard');
+    setIsSubmitting(true);
+    setSubmitError('');
+    
+    try {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      
+      // Create trip using backend API
+      const tripData = {
+        admin_username: userData.username || 'admin',
+        trip_name: formData.tripName
+      };
+      
+      const response = await fetch('http://127.0.0.1:8000/trips/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tripData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update user data with new trip information
+        const updatedUserData = {
+          ...userData,
+          trip_id: result.id,
+          is_admin: true
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        alert('🎉 Trip Created Successfully!\n\nYour mood-adaptive journey has been created with a detailed itinerary. You can now invite group members and start your adventure!');
+        navigate('/dashboard');
+      } else {
+        const errorData = await response.json();
+        setSubmitError(errorData.detail || 'Failed to create trip. Please try again.');
+      }
+    } catch (error) {
+      console.error('Trip creation error:', error);
+      setSubmitError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   React.useEffect(() => {
@@ -70,6 +115,69 @@ const CreateTrip = () => {
 
     updateProgressBar();
   }, [currentStep]);
+
+  // Generate daily itinerary when dates change
+  React.useEffect(() => {
+    if (formData.startDate && formData.endDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+      
+      if (dayDiff > 0 && dayDiff <= 30) { // Limit to 30 days for practical purposes
+        const newItinerary = [];
+        for (let i = 0; i < dayDiff; i++) {
+          const currentDate = new Date(startDate);
+          currentDate.setDate(startDate.getDate() + i);
+          newItinerary.push({
+            day: i + 1,
+            date: currentDate.toISOString().split('T')[0],
+            dayName: currentDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            activities: [{
+              name: '',
+              startTime: '',
+              endTime: '',
+              description: ''
+            }],
+            notes: '',
+            accommodation: ''
+          });
+        }
+        setDailyItinerary(newItinerary);
+      }
+    }
+  }, [formData.startDate, formData.endDate]);
+
+  const handleItineraryChange = (dayIndex, field, value) => {
+    const newItinerary = [...dailyItinerary];
+    newItinerary[dayIndex][field] = value;
+    setDailyItinerary(newItinerary);
+  };
+
+  const handleActivityChange = (dayIndex, activityIndex, field, value) => {
+    const newItinerary = [...dailyItinerary];
+    newItinerary[dayIndex].activities[activityIndex][field] = value;
+    setDailyItinerary(newItinerary);
+  };
+
+  const addActivity = (dayIndex) => {
+    const newItinerary = [...dailyItinerary];
+    newItinerary[dayIndex].activities.push({
+      name: '',
+      startTime: '',
+      endTime: '',
+      description: ''
+    });
+    setDailyItinerary(newItinerary);
+  };
+
+  const removeActivity = (dayIndex, activityIndex) => {
+    const newItinerary = [...dailyItinerary];
+    if (newItinerary[dayIndex].activities.length > 1) {
+      newItinerary[dayIndex].activities.splice(activityIndex, 1);
+      setDailyItinerary(newItinerary);
+    }
+  };
 
   return (
     <div className="create-trip">
@@ -383,11 +491,106 @@ const CreateTrip = () => {
               <h2 className="section-title">Daily Itinerary</h2>
               <p className="helper-text" style={{marginBottom: '24px'}}>Plan activities for each day of your trip.</p>
 
-              <div className="itinerary-placeholder">
-                <p style={{color: 'var(--color-text-secondary)', textAlign: 'center', padding: '40px 0'}}>
-                  Please complete the basic information and dates in previous steps to generate daily itinerary sections.
-                </p>
-              </div>
+              {(!formData.startDate || !formData.endDate) ? (
+                <div className="itinerary-placeholder">
+                  <p style={{color: 'var(--color-text-secondary)', textAlign: 'center', padding: '40px 0'}}>
+                    Please complete the basic information and dates in previous steps to generate daily itinerary sections.
+                  </p>
+                </div>
+              ) : (
+                <div className="daily-itinerary">
+                  {dailyItinerary.map((day, dayIndex) => (
+                    <div key={dayIndex} className="day-card">
+                      <div className="day-header">
+                        <h3>Day {day.day}</h3>
+                        <span className="day-date">{day.date} - {day.dayName}</span>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label>Activities</label>
+                        {day.activities.map((activity, activityIndex) => (
+                          <div key={activityIndex} className="activity-time-block">
+                            <div className="activity-time-row">
+                              <div className="time-input-group">
+                                <label>From</label>
+                                <input
+                                  type="time"
+                                  value={activity.startTime}
+                                  onChange={(e) => handleActivityChange(dayIndex, activityIndex, 'startTime', e.target.value)}
+                                  className="time-input"
+                                />
+                              </div>
+                              <div className="time-input-group">
+                                <label>To</label>
+                                <input
+                                  type="time"
+                                  value={activity.endTime}
+                                  onChange={(e) => handleActivityChange(dayIndex, activityIndex, 'endTime', e.target.value)}
+                                  className="time-input"
+                                />
+                              </div>
+                            </div>
+                            <div className="activity-details">
+                              <input
+                                type="text"
+                                placeholder={`Activity ${activityIndex + 1} name`}
+                                value={activity.name}
+                                onChange={(e) => handleActivityChange(dayIndex, activityIndex, 'name', e.target.value)}
+                                className="activity-name-input"
+                              />
+                              <textarea
+                                placeholder="Activity description (optional)"
+                                value={activity.description}
+                                onChange={(e) => handleActivityChange(dayIndex, activityIndex, 'description', e.target.value)}
+                                className="activity-description-input"
+                                rows="2"
+                              />
+                            </div>
+                            {day.activities.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeActivity(dayIndex, activityIndex)}
+                                className="btn-remove-activity"
+                              >
+                                ✕ Remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => addActivity(dayIndex)}
+                          className="btn-add-activity"
+                        >
+                          + Add Another Activity
+                        </button>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Accommodation</label>
+                          <input
+                            type="text"
+                            placeholder="Hotel, hostel, or other"
+                            value={day.accommodation}
+                            onChange={(e) => handleItineraryChange(dayIndex, 'accommodation', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="form-group">
+                          <label>Notes (Optional)</label>
+                          <input
+                            type="text"
+                            placeholder="Special notes or reminders"
+                            value={day.notes}
+                            onChange={(e) => handleItineraryChange(dayIndex, 'notes', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Step 5: Review */}
@@ -432,14 +635,29 @@ const CreateTrip = () => {
                 Next →
               </button>
               
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary"
+                disabled={isSubmitting}
                 style={{ display: currentStep === totalSteps ? 'block' : 'none' }}
               >
-                Create Trip 🚀
+                {isSubmitting ? 'Creating Trip...' : 'Create Trip 🚀'}
               </button>
             </div>
+            
+            {submitError && (
+              <div style={{
+                background: 'rgba(192, 21, 47, 0.1)',
+                color: '#c0152f',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginTop: '16px',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}>
+                {submitError}
+              </div>
+            )}
           </form>
         </div>
       </div>

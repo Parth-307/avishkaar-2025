@@ -8,11 +8,8 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('signin');
   const [formData, setFormData] = useState({
-    // Sign in data
     signinIdentifier: '',
     signinPassword: '',
-      
-    // Sign up data
     firstName: '',
     lastName: '',
     signupUsername: '',
@@ -23,12 +20,10 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState({ error: '', success: '' });
 
-  // Check if user is already logged in and redirect to dashboard
   useEffect(() => {
     const userData = localStorage.getItem('userData');
     
     if (userData) {
-      console.log('User already logged in, redirecting to dashboard');
       navigate('/dashboard');
       return;
     }
@@ -41,19 +36,17 @@ const AuthPage = () => {
       [name]: value
     }));
     
-    // Clear messages when user starts typing
     if (messages.error || messages.success) {
       setMessages({ error: '', success: '' });
     }
   };
 
   const showMessage = (type, message) => {
-    setMessages({ 
-      error: type === 'error' ? message : '', 
-      success: type === 'success' ? message : '' 
+    setMessages({
+      error: type === 'error' ? message : '',
+      success: type === 'success' ? message : ''
     });
     
-    // Auto-clear messages after 5 seconds
     setTimeout(() => {
       setMessages({ error: '', success: '' });
     }, 5000);
@@ -65,7 +58,6 @@ const AuthPage = () => {
   };
 
   const isValidUsername = (username) => {
-    // Username should be 3-30 characters, alphanumeric and underscore only
     const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
     return usernameRegex.test(username);
   };
@@ -87,13 +79,11 @@ const AuthPage = () => {
     
     const { signinIdentifier, signinPassword } = formData;
     
-    // Validation
     if (!signinIdentifier || !signinPassword) {
       showMessage('error', 'Please fill in all fields.');
       return;
     }
     
-    // Check if identifier is email or username
     const isEmail = isValidEmail(signinIdentifier);
     
     if (!isEmail && !isValidUsername(signinIdentifier)) {
@@ -118,10 +108,8 @@ const AuthPage = () => {
       const data = await response.json();
       
       if (response.ok) {
-        // Login successful
         showMessage('success', `🎉 Successfully logged in! Welcome back, ${data.full_name}!`);
         
-        // Store user info
         localStorage.setItem('userData', JSON.stringify({
           user_id: data.user_id,
           full_name: data.full_name,
@@ -129,10 +117,8 @@ const AuthPage = () => {
           email: data.email || signinIdentifier
         }));
         
-        // Clear form
         setFormData(prev => ({ ...prev, signinPassword: '' }));
         
-        // Navigate to dashboard after successful login
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
@@ -142,8 +128,6 @@ const AuthPage = () => {
       }
       
     } catch (error) {
-      console.error('Login error:', error);
-      
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         showMessage('error', 'Unable to connect to server. Please ensure the backend is running on port 8000.');
       } else {
@@ -159,7 +143,6 @@ const AuthPage = () => {
     
     const { firstName, lastName, signupUsername, signupEmail, signupPassword, confirmPassword } = formData;
     
-    // Validation
     if (!firstName || !lastName || !signupUsername || !signupEmail || !signupPassword || !confirmPassword) {
       showMessage('error', 'Please fill in all fields.');
       return;
@@ -205,10 +188,8 @@ const AuthPage = () => {
       const data = await response.json();
       
       if (response.ok) {
-        // Sign up successful
         showMessage('success', 'Account created successfully! You can now sign in.');
         
-        // Clear form
         setFormData(prev => ({
           ...prev,
           firstName: '',
@@ -219,7 +200,6 @@ const AuthPage = () => {
           confirmPassword: ''
         }));
         
-        // Switch to sign in tab after 2 seconds
         setTimeout(() => {
           setActiveTab('signin');
         }, 2000);
@@ -229,8 +209,6 @@ const AuthPage = () => {
       }
       
     } catch (error) {
-      console.error('Sign up error:', error);
-      
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         showMessage('error', 'Unable to connect to server. Please ensure the backend is running on port 8000.');
       } else {
@@ -251,7 +229,6 @@ const AuthPage = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-card">
-          {/* Close Button */}
           <button className="close-button" onClick={handleBackToHome} aria-label="Close and go back to home">
             ×
           </button>
@@ -263,13 +240,13 @@ const AuthPage = () => {
           </div>
 
           <div className="tab-container">
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'signin' ? 'active' : ''}`}
               onClick={() => setActiveTab('signin')}
             >
               Sign In
             </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'signup' ? 'active' : ''}`}
               onClick={() => setActiveTab('signup')}
             >
@@ -277,7 +254,6 @@ const AuthPage = () => {
             </button>
           </div>
 
-          {/* Messages */}
           {messages.error && (
             <div className="message error show">
               <span className="message-icon">⚠️</span>
@@ -292,7 +268,6 @@ const AuthPage = () => {
             </div>
           )}
 
-          {/* Sign In Form */}
           {activeTab === 'signin' && (
             <form className="form-container active" onSubmit={handleSignIn}>
               <div className="form-group">
@@ -334,7 +309,6 @@ const AuthPage = () => {
             </form>
           )}
 
-          {/* Sign Up Form */}
           {activeTab === 'signup' && (
             <form className="form-container active" onSubmit={handleSignUp}>
               <div className="name-group">

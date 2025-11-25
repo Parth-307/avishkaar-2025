@@ -9,28 +9,24 @@ import json
 from datetime import datetime, timedelta
 import logging
 
-# Import database and models
 from database import SessionLocal, get_db, create_tables
 import models, schemas
 from auth_system import AuthSystem
 import pivot_engine
 from websocket_manager import connection_manager
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize database
 create_tables()
 auth_system = AuthSystem()
 
 app = FastAPI(title="AI Trip Management API", version="1.0.0")
 
-# CORS Configuration
 origins = [
-    "http://localhost:3000",  # React Default
-    "http://localhost:5173",  # Vite React Default
-    "http://localhost:8000",  # FastAPI default
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -41,7 +37,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dependency to get database session
 def get_db():
     db = SessionLocal()
     try:
@@ -49,62 +44,50 @@ def get_db():
     finally:
         db.close()
 
-# =============================================================================
-# AUTHENTICATION ENDPOINTS
-# =============================================================================
-
 @app.get("/")
 def read_root():
     return {"message": "AI-Powered Trip Management API is Running!", "version": "1.0.0"}
 
 @app.post("/api/signup", response_model=schemas.UserResponse)
 async def signup(data: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
     if data.password != data.confirm_password:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Passwords do not match"
         )
 
     try:
         user = auth_system.register_user(
-            data.full_name, 
-            data.username, 
-            data.email, 
+            data.full_name,
+            data.username,
+            data.email,
             data.password
         )
         return user
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
 
 @app.post("/api/login", response_model=schemas.UserResponse)
 async def login(data: schemas.UserLogin, db: Session = Depends(get_db)):
-    """Authenticate user login"""
     user = auth_system.authenticate_user(data.identifier, data.password)
     
     if user:
         return user
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Credentials"
         )
 
-# =============================================================================
-# TRIP MANAGEMENT ENDPOINTS
-# =============================================================================
-
 @app.post("/trips/", response_model=schemas.TripResponse)
 async def create_trip(trip_data: schemas.TripCreate, db: Session = Depends(get_db)):
-    """Create a new trip with admin user"""
-    
     try:
         trip, admin_user = auth_system.create_trip_admin(
             trip_data.admin_username,
-            "default_password",  # You might want to handle this differently
+            "default_password",
             trip_data.trip_name
         )
         
@@ -124,9 +107,6 @@ async def create_trip(trip_data: schemas.TripCreate, db: Session = Depends(get_d
 
 @app.post("/trips/join", response_model=schemas.JoinTripResponse)
 async def join_trip(request: schemas.JoinTripRequest, db: Session = Depends(get_db)):
-    """Join existing trip using join code"""
-    
-    # First authenticate the user
     user = auth_system.authenticate_user(request.identifier, request.password)
     if not user:
         raise HTTPException(
@@ -134,7 +114,6 @@ async def join_trip(request: schemas.JoinTripRequest, db: Session = Depends(get_
             detail="Invalid credentials"
         )
     
-    # Join the trip
     success = auth_system.join_trip(user.id, request.join_code)
     
     if not success:
@@ -143,7 +122,6 @@ async def join_trip(request: schemas.JoinTripRequest, db: Session = Depends(get_
             detail="Trip not found or invalid join code"
         )
     
-    # Get updated user info
     updated_user = auth_system.get_user_by_id(user.id)
     
     return schemas.JoinTripResponse(
@@ -155,8 +133,6 @@ async def join_trip(request: schemas.JoinTripRequest, db: Session = Depends(get_
 
 @app.get("/trips/{trip_id}/participants", response_model=schemas.TripParticipantsResponse)
 async def get_trip_participants(trip_id: int, db: Session = Depends(get_db)):
-    """Get all participants of a trip"""
-    
     participants = db.query(models.User).filter(
         models.User.trip_id == trip_id,
         models.User.is_active == True
@@ -167,17 +143,8 @@ async def get_trip_participants(trip_id: int, db: Session = Depends(get_db)):
         participants=participants
     )
 
-# =============================================================================
-# ACTIVITY MANAGEMENT ENDPOINTS
-# =============================================================================
-
 @app.post("/activities/", response_model=schemas.ActivityResponse)
 async def create_activity(activity_data: schemas.ActivityCreate, db: Session = Depends(get_db)):
-    """Create a new activity for a trip"""
-    
-    # Verify user has access to this trip
-    user = auth_system.get_user_by_id(activity_data.trip_id)  # This is wrong, fix it
-    
     new_activity = models.Activity(
         trip_id=activity_data.trip_id,
         title=activity_data.title,
@@ -201,8 +168,6 @@ async def create_activity(activity_data: schemas.ActivityCreate, db: Session = D
 
 @app.get("/trips/{trip_id}/activities", response_model=List[schemas.ActivityResponse])
 async def get_trip_activities(trip_id: int, status: str = None, db: Session = Depends(get_db)):
-    """Get activities for a trip"""
-    
     query = db.query(models.Activity).filter(models.Activity.trip_id == trip_id)
     
     if status:
@@ -214,8 +179,6 @@ async def get_trip_activities(trip_id: int, status: str = None, db: Session = De
 
 @app.put("/activities/{activity_id}/status", response_model=schemas.ActivityResponse)
 async def update_activity_status(activity_id: int, update: schemas.ActivityStatusUpdate, db: Session = Depends(get_db)):
-    """Update activity status"""
-    
     activity = db.query(models.Activity).filter(models.Activity.id == activity_id).first()
     if not activity:
         raise HTTPException(
@@ -231,9 +194,6 @@ async def update_activity_status(activity_id: int, update: schemas.ActivityStatu
 
 @app.get("/trips/{trip_id}/current-activity", response_model=schemas.CurrentActivityResponse)
 async def get_current_activity(trip_id: int, db: Session = Depends(get_db)):
-    """Get current active activity for a trip"""
-    
-    # Check if there's an active activity
     active_activity = db.query(models.Activity).filter(
         models.Activity.trip_id == trip_id,
         models.Activity.status == "active"
@@ -246,7 +206,6 @@ async def get_current_activity(trip_id: int, db: Session = Depends(get_db)):
             status="no_active_activity"
         )
     
-    # Count participants who have voted for this activity
     total_participants = db.query(models.User).filter(
         models.User.trip_id == trip_id,
         models.User.is_active == True
@@ -266,15 +225,8 @@ async def get_current_activity(trip_id: int, db: Session = Depends(get_db)):
         total_participants=total_participants
     )
 
-# =============================================================================
-# FEEDBACK SYSTEM ENDPOINTS (5-CATEGORY)
-# =============================================================================
-
 @app.post("/activities/{activity_id}/feedback", response_model=schemas.FeedbackResponse)
 async def submit_feedback(activity_id: int, feedback: schemas.FeedbackCreate, db: Session = Depends(get_db)):
-    """Submit 5-category feedback for an activity"""
-    
-    # Verify user can submit feedback for this activity
     activity = db.query(models.Activity).filter(models.Activity.id == activity_id).first()
     if not activity:
         raise HTTPException(
@@ -282,7 +234,6 @@ async def submit_feedback(activity_id: int, feedback: schemas.FeedbackCreate, db
             detail="Activity not found"
         )
     
-    # Check if user already submitted feedback for this activity
     existing_feedback = db.query(models.ActivityFeedback).filter(
         models.ActivityFeedback.activity_id == activity_id,
         models.ActivityFeedback.user_id == feedback.user_id
@@ -294,7 +245,6 @@ async def submit_feedback(activity_id: int, feedback: schemas.FeedbackCreate, db
             detail="Feedback already submitted for this activity"
         )
     
-    # Create new feedback
     new_feedback = models.ActivityFeedback(
         activity_id=activity_id,
         user_id=feedback.user_id,
@@ -310,7 +260,6 @@ async def submit_feedback(activity_id: int, feedback: schemas.FeedbackCreate, db
     db.commit()
     db.refresh(new_feedback)
     
-    # Calculate average scores
     feedback_data = {
         "tired": feedback.tired,
         "energetic": feedback.energetic,
@@ -319,7 +268,6 @@ async def submit_feedback(activity_id: int, feedback: schemas.FeedbackCreate, db
         "adventurous": feedback.adventurous
     }
     
-    # Analyze feedback
     fatigue_score = models.FeedbackAnalyzer.calculate_fatigue_score(feedback_data)
     fatigue_level = models.FeedbackAnalyzer.get_fatigue_level(fatigue_score)
     recommendations = models.FeedbackAnalyzer.generate_recommendations(feedback_data, fatigue_score)
@@ -336,9 +284,6 @@ async def submit_feedback(activity_id: int, feedback: schemas.FeedbackCreate, db
 
 @app.get("/activities/{activity_id}/feedback", response_model=schemas.FeedbackAggregateResponse)
 async def get_activity_feedback(activity_id: int, db: Session = Depends(get_db)):
-    """Get aggregated feedback for an activity"""
-    
-    # Verify activity exists
     activity = db.query(models.Activity).filter(models.Activity.id == activity_id).first()
     if not activity:
         raise HTTPException(
@@ -346,7 +291,6 @@ async def get_activity_feedback(activity_id: int, db: Session = Depends(get_db))
             detail="Activity not found"
         )
     
-    # Get all feedback for this activity
     feedbacks = db.query(models.ActivityFeedback).filter(
         models.ActivityFeedback.activity_id == activity_id
     ).all()
@@ -362,7 +306,6 @@ async def get_activity_feedback(activity_id: int, db: Session = Depends(get_db))
             participant_status=[]
         )
     
-    # Calculate averages
     total_feedbacks = len(feedbacks)
     avg_scores = {
         "tired": sum(f.tired for f in feedbacks) / total_feedbacks,
@@ -372,11 +315,9 @@ async def get_activity_feedback(activity_id: int, db: Session = Depends(get_db))
         "adventurous": sum(f.adventurous for f in feedbacks) / total_feedbacks
     }
     
-    # Fatigue analysis
     fatigue_score = models.FeedbackAnalyzer.calculate_fatigue_score(avg_scores)
     fatigue_level = models.FeedbackAnalyzer.get_fatigue_level(fatigue_score)
     
-    # Get participant status
     trip_participants = db.query(models.User).filter(
         models.User.trip_id == activity.trip_id,
         models.User.is_active == True
@@ -406,29 +347,20 @@ async def get_activity_feedback(activity_id: int, db: Session = Depends(get_db))
         participant_status=participant_status
     )
 
-# =============================================================================
-# LEGACY VOTING ENDPOINTS (for backward compatibility)
-# =============================================================================
-
 @app.post("/activities/{activity_id}/vote", response_model=schemas.VoteResponse)
 async def vote_mood(activity_id: int, vote: schemas.VoteCreate, db: Session = Depends(get_db)):
-    """Legacy voting endpoint (single energy level)"""
-    
-    # Record vote
     new_vote = models.Vote(
-        activity_id=activity_id, 
-        user_id=vote.user_id, 
+        activity_id=activity_id,
+        user_id=vote.user_id,
         energy_level=vote.energy_level
     )
     db.add(new_vote)
     db.commit()
     
-    # Calculate average immediately for real-time feedback
     avg_score = db.query(func.avg(models.Vote.energy_level)).filter(
         models.Vote.activity_id == activity_id
     ).scalar() or 10.0
     
-    # Check if all participants have voted
     activity = db.query(models.Activity).filter(models.Activity.id == activity_id).first()
     total_users = db.query(models.User).filter(
         models.User.trip_id == activity.trip_id,
@@ -436,16 +368,15 @@ async def vote_mood(activity_id: int, vote: schemas.VoteCreate, db: Session = De
     ).count()
     current_votes = db.query(models.Vote).filter(models.Vote.activity_id == activity_id).count()
     
-    # Decision logic (simplified)
     action = "CONTINUE"
     msg = "Waiting for others..."
     
     if current_votes >= (total_users / 2):
         if avg_score < 4.0:
-            action = "ADMIN_DECISION" 
+            action = "ADMIN_DECISION"
             msg = "Group energy is critically low. Admin Intervention Required."
         elif avg_score > 8.0:
-            action = "AUTO_PIVOT" 
+            action = "AUTO_PIVOT"
             msg = "Group is hyper! Adding intensity automatically."
         else:
             action = "CONTINUE"
@@ -457,18 +388,11 @@ async def vote_mood(activity_id: int, vote: schemas.VoteCreate, db: Session = De
         "message": msg
     }
 
-# =============================================================================
-# AI OPTIMIZATION ENDPOINTS
-# =============================================================================
-
 @app.post("/trips/{trip_id}/pivot", response_model=schemas.PivotResponse)
 async def admin_pivot_decision(trip_id: int, request: schemas.PivotRequest, db: Session = Depends(get_db)):
-    """AI-powered trip optimization"""
-    
-    # Verify admin
     if not auth_system.is_trip_admin(request.admin_id, trip_id):
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Only Trip Admins can pivot"
         )
     
@@ -479,14 +403,11 @@ async def admin_pivot_decision(trip_id: int, request: schemas.PivotRequest, db: 
             strategy_used="Manual Continue"
         )
     
-    # Get pending activities
     pending_activities = db.query(models.Activity).filter(
-        models.Activity.trip_id == trip_id, 
+        models.Activity.trip_id == trip_id,
         models.Activity.status == "pending"
     ).all()
     
-    # For now, use last activity's feedback as context
-    # In a real implementation, you'd aggregate all recent feedback
     last_feedback = db.query(models.ActivityFeedback).join(models.Activity).filter(
         models.Activity.trip_id == trip_id
     ).order_by(models.ActivityFeedback.submitted_at.desc()).first()
@@ -500,15 +421,12 @@ async def admin_pivot_decision(trip_id: int, request: schemas.PivotRequest, db: 
             "adventurous": last_feedback.adventurous
         }
     else:
-        # Default neutral feedback
         feedback_data = {"tired": 3, "energetic": 3, "sick": 3, "hungry": 3, "adventurous": 3}
     
-    # Call AI pivot engine
     optimization_result = pivot_engine.PivotEngine.optimize_itinerary_5_category(
         pending_activities, feedback_data, request.user_lat, request.user_lng
     )
     
-    # Apply updates to database
     updated_count = 0
     for update in optimization_result.get("updates", []):
         original_id = update.get("original_id")
@@ -523,7 +441,6 @@ async def admin_pivot_decision(trip_id: int, request: schemas.PivotRequest, db: 
         new_data = update.get("new_data", {})
         
         if action == "replace":
-            # Update activity with new data
             for field, value in new_data.items():
                 if hasattr(activity, field):
                     setattr(activity, field, value)
@@ -533,8 +450,6 @@ async def admin_pivot_decision(trip_id: int, request: schemas.PivotRequest, db: 
         elif action == "cancel":
             activity.status = "cancelled"
             updated_count += 1
-            
-        # For "keep" action, no changes needed
     
     db.commit()
     
@@ -545,14 +460,8 @@ async def admin_pivot_decision(trip_id: int, request: schemas.PivotRequest, db: 
         ai_analysis=optimization_result.get("ai_analysis", {})
     )
 
-# =============================================================================
-# UTILITY ENDPOINTS
-# =============================================================================
-
 @app.get("/trips/{trip_id}/statistics", response_model=schemas.TripStatisticsResponse)
 async def get_trip_statistics(trip_id: int, db: Session = Depends(get_db)):
-    """Get statistics for a trip"""
-    
     total_activities = db.query(models.Activity).filter(
         models.Activity.trip_id == trip_id
     ).count()
@@ -572,7 +481,6 @@ async def get_trip_statistics(trip_id: int, db: Session = Depends(get_db)):
         models.User.is_active == True
     ).count()
     
-    # Calculate average mood from recent feedback
     recent_feedback = db.query(models.ActivityFeedback).join(models.Activity).filter(
         models.Activity.trip_id == trip_id
     ).order_by(models.ActivityFeedback.submitted_at.desc()).limit(50).all()
@@ -588,23 +496,14 @@ async def get_trip_statistics(trip_id: int, db: Session = Depends(get_db)):
         completed_activities=completed_activities,
         pending_activities=pending_activities,
         total_participants=total_participants,
-        active_participants=total_participants,  # For now, assume all active
+        active_participants=total_participants,
         average_mood_score=avg_mood,
         recent_feedback_trend=[]
     )
 
-# =============================================================================
-# WEBSOCKET ENDPOINTS FOR REAL-TIME UPDATES
-# =============================================================================
-
 @app.websocket("/ws/trip/{trip_id}/user/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, trip_id: int, user_id: int, username: str = None):
-    """
-    WebSocket endpoint for real-time trip updates.
-    Connects users to their trip room for live synchronization.
-    """
     if not username:
-        # Try to get username from query parameters
         try:
             username = websocket.query_params.get('username', f'user_{user_id}')
         except:
@@ -613,19 +512,15 @@ async def websocket_endpoint(websocket: WebSocket, trip_id: int, user_id: int, u
     try:
         await connection_manager.connect(websocket, trip_id, user_id, username)
         
-        # Send initial trip data
         await send_initial_trip_data(websocket, trip_id)
         
-        # Listen for incoming messages
         while True:
             try:
                 message = await websocket.receive_text()
                 message_data = json.loads(message)
                 
-                # Handle different message types
                 await connection_manager.handle_message(websocket, message_data)
                 
-                # Process real-time updates based on message type
                 if message_data.get('type') == 'feedback_update':
                     await handle_websocket_feedback_update(message_data)
                 elif message_data.get('type') == 'activity_status_change':
@@ -656,9 +551,6 @@ async def websocket_endpoint(websocket: WebSocket, trip_id: int, user_id: int, u
 
 @app.get("/api/websocket/status")
 async def get_websocket_status():
-    """
-    Get WebSocket connection status and statistics.
-    """
     return {
         'status': 'active',
         'total_connections': len(connection_manager.connection_metadata),
@@ -668,9 +560,6 @@ async def get_websocket_status():
 
 @app.get("/api/trips/{trip_id}/connections")
 async def get_trip_connections(trip_id: int):
-    """
-    Get list of active connections for a specific trip.
-    """
     connections_info = connection_manager.get_trip_connections_info(trip_id)
     return {
         'trip_id': trip_id,
@@ -678,22 +567,10 @@ async def get_trip_connections(trip_id: int):
         'connections': connections_info
     }
 
-# =============================================================================
-# WEBSOCKET HELPER FUNCTIONS
-# =============================================================================
-
 async def send_initial_trip_data(websocket: WebSocket, trip_id: int):
-    """
-    Send initial trip data when WebSocket connection is established.
-    """
     try:
-        # Get current activity
         current_activity_data = await get_current_activity_for_websocket(trip_id)
-        
-        # Get recent feedback
         recent_feedback_data = await get_recent_feedback_for_websocket(trip_id)
-        
-        # Get active participants
         active_participants = await get_active_participants_for_websocket(trip_id)
         
         initial_data = {
@@ -711,7 +588,6 @@ async def send_initial_trip_data(websocket: WebSocket, trip_id: int):
         logger.error(f"Error sending initial trip data: {e}")
 
 async def get_current_activity_for_websocket(trip_id: int):
-    """Get current activity data for WebSocket clients"""
     db = SessionLocal()
     try:
         active_activity = db.query(models.Activity).filter(
@@ -722,7 +598,6 @@ async def get_current_activity_for_websocket(trip_id: int):
         if not active_activity:
             return None
         
-        # Get vote count for this activity
         total_participants = db.query(models.User).filter(
             models.User.trip_id == trip_id,
             models.User.is_active == True
@@ -749,10 +624,8 @@ async def get_current_activity_for_websocket(trip_id: int):
         db.close()
 
 async def get_recent_feedback_for_websocket(trip_id: int):
-    """Get recent feedback data for WebSocket clients"""
     db = SessionLocal()
     try:
-        # Get feedback from the last 30 minutes
         thirty_minutes_ago = datetime.now() - timedelta(minutes=30)
         
         recent_feedback = db.query(models.ActivityFeedback).join(models.Activity).filter(
@@ -785,7 +658,6 @@ async def get_recent_feedback_for_websocket(trip_id: int):
         db.close()
 
 async def get_active_participants_for_websocket(trip_id: int):
-    """Get active participants data for WebSocket clients"""
     db = SessionLocal()
     try:
         participants = db.query(models.User).filter(
@@ -808,14 +680,10 @@ async def get_active_participants_for_websocket(trip_id: int):
         db.close()
 
 async def handle_websocket_feedback_update(message_data: dict):
-    """
-    Handle real-time feedback updates via WebSocket.
-    """
     trip_id = message_data.get('trip_id')
     user_id = message_data.get('user_id')
     feedback_data = message_data.get('feedback_data', {})
     
-    # Broadcast to all trip participants
     await connection_manager.broadcast_to_trip(trip_id, {
         'type': 'feedback_live_update',
         'user_id': user_id,
@@ -828,15 +696,11 @@ async def handle_websocket_feedback_update(message_data: dict):
     })
 
 async def handle_websocket_activity_status_change(message_data: dict):
-    """
-    Handle real-time activity status changes via WebSocket.
-    """
     trip_id = message_data.get('trip_id')
     activity_id = message_data.get('activity_id')
     new_status = message_data.get('new_status')
     user_id = message_data.get('user_id')
     
-    # Broadcast activity status change to all participants
     await connection_manager.broadcast_to_trip(trip_id, {
         'type': 'activity_status_live_change',
         'activity_id': activity_id,
@@ -846,15 +710,11 @@ async def handle_websocket_activity_status_change(message_data: dict):
     })
 
 async def handle_websocket_admin_decision(message_data: dict):
-    """
-    Handle real-time admin decisions via WebSocket.
-    """
     trip_id = message_data.get('trip_id')
     decision_type = message_data.get('decision_type')
     decision_data = message_data.get('decision_data', {})
     admin_user_id = message_data.get('admin_user_id')
     
-    # Broadcast admin decision to all participants
     await connection_manager.broadcast_to_trip(trip_id, {
         'type': 'admin_decision_live',
         'decision_type': decision_type,

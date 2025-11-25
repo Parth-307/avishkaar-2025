@@ -361,6 +361,156 @@
   margin-top: 6px;
 }
 
+/* Daily Itinerary Styles */
+.daily-itinerary {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.day-card {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.day-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.day-date {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.activity-time-block {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.activity-time-row {
+  display: flex;
+  gap: 20px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-input-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.time-input {
+  padding: 8px 12px;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.time-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.activity-details {
+  margin-bottom: 12px;
+}
+
+.activity-name-input,
+.activity-description-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.activity-name-input:focus,
+.activity-description-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.activity-description-input {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.btn-remove-activity {
+  background: var(--color-error);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.btn-remove-activity:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.btn-add-activity {
+  background: var(--color-success);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.btn-add-activity:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
 .itinerary-placeholder {
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -411,6 +561,31 @@
   }
 
   .radio-option {
+    min-width: unset;
+  }
+
+  .day-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .activity-time-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-remove-activity {
+    position: static;
+    align-self: flex-end;
+    margin-top: 8px;
+  }
+
+  .daily-itinerary {
+    max-height: 400px;
+  }
+
+  .time-input {
     min-width: unset;
   }
 }

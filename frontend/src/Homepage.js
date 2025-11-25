@@ -8,20 +8,17 @@ const Homepage = () => {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    // Check if user is logged in
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
       try {
         setUserData(JSON.parse(storedUserData));
       } catch (error) {
-        console.error('Error parsing user data:', error);
         localStorage.removeItem('userData');
       }
     }
   }, []);
 
   useEffect(() => {
-    // Load destinations only once when component mounts
     const loadDestinationsOnce = () => {
       if (!destinationsLoadedRef.current) {
         loadDestinations();
@@ -29,13 +26,11 @@ const Homepage = () => {
       }
     };
 
-    // Load after a short delay
     const timer = setTimeout(loadDestinationsOnce, 300);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    // Initialize animations and scroll handling
     const handleScroll = () => {
       const scrollTop = window.pageYOffset;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -78,7 +73,6 @@ const Homepage = () => {
       });
     }, observerOptions);
 
-    // Observe animated elements
     const animatedElements = document.querySelectorAll('[data-animate], .feature-card, .destination-card');
     animatedElements.forEach(el => observer.observe(el));
 
@@ -156,11 +150,9 @@ const Homepage = () => {
   const handleLogout = () => {
     localStorage.removeItem('userData');
     setUserData(null);
-    // Force page refresh to update the UI
     window.location.reload();
   };
 
-  // Add stagger animation delay to feature cards
   useEffect(() => {
     const featureCards = document.querySelectorAll('.feature-card');
     featureCards.forEach((card, index) => {
@@ -172,10 +164,8 @@ const Homepage = () => {
 
   return (
     <div className="homepage">
-      {/* Progress Bar */}
       <div className="progress-bar"></div>
 
-      {/* Header */}
       <header id="header" className="homepage-header">
         <div className="logo" onClick={() => navigate('/')}>ITINERARY</div>
         <nav>
@@ -191,7 +181,6 @@ const Homepage = () => {
             {userData ? `Hi, ${userData.full_name?.split(' ')[0] || 'Dashboard'}` : 'Login'}
           </button>
           
-          {/* Logout button (only show when logged in) */}
           {userData && (
             <button className="logout-btn" onClick={handleLogout}>
               Logout
@@ -200,7 +189,6 @@ const Homepage = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
       <section className="hero" id="hero">
         <div className="hero-content">
           <h1>Your Journey, Crafted With Ease</h1>
@@ -210,7 +198,6 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="features-section" id="features">
         <h2>Explore Everything</h2>
         <div className="features-grid">
@@ -245,7 +232,6 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Destinations Section */}
       <section className="destinations-section" id="destinations">
         <h2>Popular Destinations</h2>
         <p>Discover breathtaking places around the world</p>
@@ -254,7 +240,6 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* About Us Section */}
       <section className="planner-section" id="planner">
         <h2>About Us</h2>
         <div className="planner-container" style={{maxWidth: '900px'}}>
@@ -312,7 +297,6 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer>
         <p>&copy; 2025 Itinerary Planner. Your journey starts here.</p>
         <p>Crafted with ❤️ for travelers worldwide</p>
@@ -323,7 +307,6 @@ const Homepage = () => {
         </div>
       </footer>
 
-      {/* Scroll to Top */}
       <div className="scroll-top" onClick={scrollToTop}>
         ⬆️
       </div>

@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-google-genai
-googlemaps
-python-dotenv
-requests
-pydantic
