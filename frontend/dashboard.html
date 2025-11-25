@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap');
+
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1950&q=80') center/cover no-repeat fixed;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            animation: fadeIn 1.5s ease;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            animation: slideDown 1s ease;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #2c3e50;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 18px 45px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3b6b6d, #9c6d26);
+            color: #fff;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.3s ease;
+            font-weight: 700;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(141, 6, 96, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button:hover {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 15px 40px rgba(106, 17, 203, 0.7);
+            background: linear-gradient(135deg, #2a4772, #6e2e2e);
+            filter: brightness(1.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .footer-text {
+            margin-top: 40px;
+            font-size: 2rem;
+            font-weight: 700;
+            opacity: 0.9;
+            position: static;
+            color: #000000;
+            font-style: bold
+            ;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Plan Your Next Journey</h1>
+
+        <div class="btn-group">
+            <button onclick="createTrip()"><span style="font-size:1.6rem;">➕</span> Create a Trip</button>
+            <button onclick="joinTrip()">Join an Existing Trip</button>
+        </div>
+
+        <p class="footer-text">Your Adventure Starts Here 🌍</p>
+    </div>
+
+    <script>
+        function createTrip() {
+            alert("Redirecting to Create Trip page...");
+        }
+
+        function joinTrip() {
+            alert("Redirecting to Join Trip page...");
+        }
+    </script>
+</body>
+
+</html>

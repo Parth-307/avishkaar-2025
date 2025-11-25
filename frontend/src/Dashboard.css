@@ -1,0 +1,202 @@
+/* Dashboard Styles */
+.dashboard {
+  min-height: 100vh;
+  background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1950&q=80') center/cover no-repeat fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  overflow: hidden;
+  position: relative;
+}
+
+.dashboard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(2px);
+}
+
+.dashboard-container {
+  text-align: center;
+  animation: fadeIn 1.5s ease;
+  position: relative;
+  z-index: 1;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 90%;
+}
+
+.dashboard-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 40px;
+  animation: slideDown 1s ease;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+.btn-group {
+  display: flex;
+  gap: 25px;
+  justify-content: center;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.dashboard .btn,
+.create-trip-btn,
+.join-trip-btn {
+  padding: 18px 45px;
+  font-size: 1.3rem;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #3b6b6d, #9c6d26);
+  color: #fff;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.3s ease;
+  font-weight: 700;
+  letter-spacing: 1px;
+  box-shadow: 0 5px 15px rgba(141, 6, 96, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard .btn:hover,
+.create-trip-btn:hover,
+.join-trip-btn:hover {
+  transform: translateY(-10px) scale(1.1);
+  box-shadow: 0 15px 40px rgba(106, 17, 203, 0.7);
+  background: linear-gradient(135deg, #2a4772, #6e2e2e);
+  filter: brightness(1.2);
+}
+
+.dashboard .btn:active,
+.create-trip-btn:active,
+.join-trip-btn:active {
+  transform: translateY(-5px) scale(1.05);
+}
+
+.footer-text {
+  font-size: 2rem;
+  font-weight: 700;
+  opacity: 0.9;
+  color: #000000;
+  font-style: bold;
+  margin-bottom: 30px;
+}
+
+.back-home-btn {
+  padding: 12px 24px;
+  font-size: 1rem;
+  border: 2px solid #3b6b6d;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.9);
+  color: #3b6b6d;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-top: 20px;
+}
+
+.back-home-btn:hover {
+  background: #3b6b6d;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(59, 107, 109, 0.3);
+}
+
+.icon {
+  font-size: 1.6rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+
+  .dashboard-title {
+    font-size: 2rem;
+    margin-bottom: 30px;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .dashboard .btn,
+  .create-trip-btn,
+  .join-trip-btn {
+    padding: 16px 35px;
+    font-size: 1.1rem;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .footer-text {
+    font-size: 1.5rem;
+  }
+
+  .back-home-btn {
+    font-size: 0.9rem;
+    padding: 10px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-title {
+    font-size: 1.8rem;
+  }
+
+  .dashboard .btn,
+  .create-trip-btn,
+  .join-trip-btn {
+    padding: 14px 30px;
+    font-size: 1rem;
+  }
+
+  .footer-text {
+    font-size: 1.3rem;
+  }
+}
